@@ -158,12 +158,20 @@ tab = st.tabs(['🎥 En vivo', '🧍 Administración', '📊 Analítica', '📤 
 # EN VIVO
 # ---------------------------
 with tab[0]:
-    st.header('🎥 Detección en tiempo real o por imagen')
+    st.header('🎥 Detección por imagen o cámara (local)')
 
-    mode = st.radio('Fuente', ['Cámara', 'Subir imagen'])
+    # Detectamos si estamos en Streamlit Cloud (no hay acceso a cámara)
+    RUNNING_ON_CLOUD = os.environ.get("STREAMLIT_CLOUD") == "true"
+
+    mode_options = ['Subir imagen']
+    if not RUNNING_ON_CLOUD:
+        mode_options.insert(0, 'Cámara')
+
+    mode = st.radio('Fuente', mode_options)
     FRAME_WINDOW = st.image([])
 
     if mode == 'Cámara':
+        st.info('⚠️ Solo disponible en ejecución local.')
         run = st.checkbox('Iniciar cámara')
         if run:
             cap = cv2.VideoCapture(0)
