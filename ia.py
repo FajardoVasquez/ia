@@ -279,4 +279,3 @@ with tab[3]:
     st.dataframe(df_all)
     csv = df_all.to_csv(index=False).encode('utf-8')
     st.download_button('Descargar CSV', data=csv, file_name='predicciones.csv', mime='text/csv')
-Ñ
