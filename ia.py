@@ -158,49 +158,23 @@ tab = st.tabs(['🎥 En vivo', '🧍 Administración', '📊 Analítica', '📤 
 # EN VIVO
 # ---------------------------
 with tab[0]:
-    st.header('🎥 Detección por imagen o cámara (local)')
+    st.header('🎥 Detección en tiempo real o por imagen')
 
-    # Detectamos si estamos en Streamlit Cloud (no hay acceso a cámara)
-    RUNNING_ON_CLOUD = os.environ.get("STREAMLIT_CLOUD") == "true"
-
-    mode_options = ['Subir imagen']
-    if not RUNNING_ON_CLOUD:
-        mode_options.insert(0, 'Cámara')
-
-    mode = st.radio('Fuente', mode_options)
+    mode = st.radio('Fuente', ['Cámara', 'Subir imagen'])
     FRAME_WINDOW = st.image([])
 
     if mode == 'Cámara':
-        st.info('⚠️ Solo disponible en ejecución local.')
-        run = st.checkbox('Iniciar cámara')
-        if run:
-            cap = cv2.VideoCapture(0)
-            if not cap.isOpened():
-                st.error('No se pudo acceder a la cámara.')
-            else:
-                while True:
-                    ret, frame = cap.read()
-                    if not ret:
-                        st.error('Error leyendo cámara.')
-                        break
-                    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                    pil = Image.fromarray(rgb)
-                    arr = preprocess_image_pil(pil, IMG_SIZE)
-
-                    if model:
-                        idx, conf, raw = predict(model, arr)
-                        label = labels[idx] if labels and idx < len(labels) else str(idx)
-                        name = get_person_by_label(label)
-                        timestamp = datetime.utcnow().isoformat()
-                        insert_prediction(timestamp, 'camera', label, conf)
-
-                        cv2.putText(rgb, f"{name} ({conf*100:.1f}%)",
-                                    (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 3)
-
-                    FRAME_WINDOW.image(rgb)
-                    if not run:
-                        break
-            cap.release()
+        cam_img = st.camera_input("📸 Inicia la cámara")  # Cámara del navegador
+        if cam_img is not None and model:
+            pil = Image.open(cam_img)
+            st.image(pil, caption='Imagen capturada', use_column_width=True)
+            arr = preprocess_image_pil(pil, IMG_SIZE)
+            idx, conf, raw = predict(model, arr)
+            label = labels[idx] if labels and idx < len(labels) else str(idx)
+            name = get_person_by_label(label)
+            timestamp = datetime.utcnow().isoformat()
+            insert_prediction(timestamp, 'camera', label, conf)
+            st.success(f'Persona reconocida: **{name}** (Confianza: {conf*100:.1f}%)')
 
     else:
         uploaded_img = st.file_uploader('Sube una imagen', type=['png', 'jpg', 'jpeg'])
